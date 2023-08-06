@@ -1,0 +1,23 @@
+{
+    "base_config_file": "configs/drqv2/drqv2.json",
+    "constant":{
+        "action_repeat": 2,
+        "num_train_loops_per_epoch": 500,
+        "domain": "pendulum",
+        "task": "swingup",
+        "frame_stack": 3,
+        "noise_schedule": [0,100000,1,0.1]
+    },
+    "experiment":{
+        "tag": "test_drqv2",
+        "use_gpu": true,
+        "seed": null,
+        "base_log_dir": "~/data/mirl/test",
+        "log_level": "INFO",
+        "repeat": 1
+    },
+    "cmd_config":{
+        "drqv2.num_epochs": 500,
+        "drqv2.batch_size": 256
+    }
+}

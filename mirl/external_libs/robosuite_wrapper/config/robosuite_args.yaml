@@ -1,0 +1,65 @@
+color_randomization_args:
+  geom_names: ~  # all geoms are randomized
+  randomize_local: True  # sample nearby colors
+  randomize_material: True  # randomize material reflectance / shininess / specular
+  local_rgb_interpolation: 0.2
+  local_material_interpolation: 0.2
+  texture_variations: ["rgb", "checker", "noise", "gradient"]  # all texture variation types
+  randomize_skybox: True  # by default randomize skybox too
+
+camera_randomization_args:
+  randomize_position: True
+  randomize_rotation: True
+  randomize_fovy: True
+  position_perturbation_size: 0.03
+  rotation_perturbation_size: 0.15
+  fovy_perturbation_size: 3.0
+
+lighting_randomization_args:
+  light_names: ~  # all lights are randomized
+  randomize_position: True
+  randomize_direction: True
+  randomize_specular: True
+  randomize_ambient: True
+  randomize_diffuse: True
+  randomize_active: True
+  position_perturbation_size: 0.1
+  direction_perturbation_size: 0.35
+  specular_perturbation_size: 0.1
+  ambient_perturbation_size: 0.1
+  diffuse_perturbation_size: 0.1
+
+dynamics_randomization_args:
+  # Opt parameters
+  randomize_density: True
+  randomize_viscosity: True
+  density_perturbation_ratio: 0.1
+  viscosity_perturbation_ratio: 0.1
+  # Body parameters
+  body_names: ~  # all bodies randomized
+  randomize_position: True
+  randomize_quaternion: True
+  randomize_inertia: True
+  randomize_mass: True
+  position_perturbation_size: 0.0015
+  quaternion_perturbation_size: 0.003
+  inertia_perturbation_ratio: 0.02
+  mass_perturbation_ratio: 0.02
+  # Geom parameters
+  geom_names: ~  # all geoms randomized
+  randomize_friction: True
+  randomize_solref: True
+  randomize_solimp: True
+  friction_perturbation_ratio: 0.1
+  solref_perturbation_ratio: 0.1
+  solimp_perturbation_ratio: 0.1
+  # Joint parameters
+  joint_names: ~  # all joints randomized
+  randomize_stiffness: True
+  randomize_frictionloss: True
+  randomize_damping: True
+  randomize_armature: True
+  stiffness_perturbation_ratio: 0.1
+  frictionloss_perturbation_size: 0.05
+  damping_perturbation_size: 0.01
+  armature_perturbation_size: 0.01

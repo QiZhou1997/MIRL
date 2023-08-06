@@ -1,0 +1,121 @@
+{
+    "constant":{
+        "env_name": "half_cheetah"
+    },
+    "experiment":{
+        "tag": "my_sac",
+        "use_gpu": true,
+        "seed": null,
+        "base_log_dir": "~/data/mirl/sac",
+        "log_level": "WARNING",
+        "repeat": 5
+    },
+    "algorithm": {
+        "sac": {
+            "class": "OffPolicyRLAlgorithm",
+            "kwargs": {
+                "num_epochs": 1000,
+                "batch_size": 256,
+                "num_eval_steps":10000,
+                "num_train_loops_per_epoch": 1000,
+                "num_expl_steps_per_train_loop": 1,
+                "num_trains_per_train_loop": 1,
+                "min_num_steps_before_training": 10000,
+                "record_video_freq": 100,
+                "silent": false
+            }
+        }
+    },
+    "environment": {
+        "expl_env": {
+            "class": "simple_env",
+            "kwargs": {
+                "env_name": "$env_name" 
+            }
+        },
+        "eval_env": {
+            "class": "ContinuousVectorEnv",
+            "kwargs": {
+                "env_name": "$env_name",
+                "n_env":10,
+                "reward_scale": 1
+            }
+        },
+        "video_env": {
+            "class": "video_env",
+            "kwargs": {
+                "env_name": "$env_name"
+            }
+        }
+    },
+    "policy": {
+        "policy": {
+            "class": "gaussian_policy",
+            "kwargs": {
+                "env": "$expl_env",
+                "hidden_layers": [256,256],
+                "activation": "relu"
+            }
+        }
+    },
+    "value": {
+        "qf": {
+            "class": "ensemble_q_value",
+            "kwargs": {
+                "env": "$expl_env",
+                "hidden_layers": [256,256],
+                "activation": "relu"
+            } 
+        },
+        "qf_target": {
+            "class": "ensemble_q_value",
+            "kwargs": {
+                "env": "$expl_env",
+                "hidden_layers": [256,256],
+                "activation": "relu"
+            } 
+        }
+    },
+    "agent":{
+        "agent": {
+            "class": "SAC_agent",
+            "kwargs": {
+                "env": "$expl_env",
+                "policy": "$policy",
+                "qf": "$qf",
+                "qf_target": "$qf_target",
+                "policy_lr": 3e-4,
+                "qf_lr": 3e-4,
+                "soft_target_tau": 5e-3,
+                "use_automatic_entropy_tuning": true,
+                "alpha_if_not_automatic": 0
+            }
+        }
+    },
+    "pool": {
+        "pool": {
+            "class": "simple_pool",
+            "kwargs": {
+                "env": "$expl_env",
+                "max_size": 1e6
+            }
+        }
+    },
+    "collector": {
+        "expl_collector": {
+            "class": "simple_collector",
+            "kwargs": {
+                "env": "$expl_env",
+                "agent": "$agent",
+                "pool": "$pool"
+            }
+        },
+        "eval_collector": {
+            "class": "simple_collector",
+            "kwargs": {
+                "env": "$eval_env",
+                "agent": "$agent"
+            }
+        }
+    }
+}

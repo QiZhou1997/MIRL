@@ -1,0 +1,204 @@
+{
+    "constant":{
+        "action_repeat": 4,
+        "num_train_loops_per_epoch": 250,
+        "domain": "cheetah", 
+        "task": "run",
+        "image_size": 64,
+        "frame_stack": 8,
+        "return_traj": true,
+        "obs_before_reset": "repeat",
+        "activation": "leaky_relu_0.2",
+        "decode_std": 0.32
+    },
+    "experiment":{
+        "tag": "fix_policy_slac",
+        "use_gpu": true,
+        "seed": null,
+        "base_log_dir": "~/data/mirl/slac",
+        "log_level": "WARNING",
+        "repeat": 5
+    },
+    "algorithm": {
+        "slac": {
+            "class": "OffPolicyRLAlgorithm",
+            "kwargs": {
+                "num_epochs": 500,
+                "max_path_length": 1000,
+                "batch_size": 288,
+                "num_eval_steps":4000,
+                "num_train_loops_per_epoch": "$num_train_loops_per_epoch",
+                "num_expl_steps_per_train_loop": "$action_repeat",
+                "num_trains_per_train_loop": 1,
+                "min_num_steps_before_training": 10000,
+                "eval_freq":10,
+                "record_video_freq": -1,
+                "silent": false
+            }
+        }
+    },
+    "environment": {
+        "expl_env": {
+            "class": "DMControlEnv",
+            "kwargs": {
+                "domain": "$domain", 
+                "task": "$task",
+                "image_size": "$image_size",
+                "frame_stack": "$frame_stack",
+                "return_traj": "$return_traj",
+                "action_repeat": "$action_repeat",
+                "obs_before_reset": "$obs_before_reset",
+                "record_video": true,
+                "render_via_env": false,
+                "video_prefix": "expl_video"
+            }
+        },
+        "eval_env": {
+            "class": "DMControlEnv",
+            "kwargs": {
+                "domain": "$domain", 
+                "task": "$task",
+                "image_size": "$image_size",
+                "frame_stack": "$frame_stack",
+                "return_traj": "$return_traj",
+                "action_repeat": "$action_repeat",
+                "obs_before_reset": "$obs_before_reset",
+                "record_video": true,
+                "render_via_env": false,
+                "video_prefix": "eval_video"
+            }
+        }
+    },
+    "processor": {
+        "proc": {
+            "class": "CNNEncoder",
+            "kwargs": {
+                "env": "$expl_env",
+                "output_size": 256,
+                "cnn_kernels": [
+                    [-1, 32, 5, 2, 2],
+                    [32, 64, 3, 2, 1],
+                    [64, 128, 3, 2, 1],
+                    [128, 256, 3, 2, 1],
+                    [256, 256, 4]
+                ],
+                "activation": "$activation"
+            }
+        },
+        "traj_proc": {
+            "class": "SLACLatentModel",
+            "kwargs": {
+                "env": "$expl_env",
+                "obs_processor": "$proc",
+                "z1_dim": 32,
+                "z2_dim": 256,
+                "decode_std": "$decode_std",
+                "decoder_kwargs": {
+                    "cnn_trans_kernels": [
+                        [-1, 256, 4],
+                        [256, 128, 3, 2, 1, 1],
+                        [128, 64, 3, 2, 1, 1],
+                        [64, 32, 3, 2, 1, 1],
+                        [32, 3, 5, 2, 2, 1]
+                    ], 
+                    "activation": "$activation"
+                },
+                "mlp_kwargs":{
+                    "hidden_layers": [256,256],
+                    "activation": "$activation"
+                }
+            }
+        }
+    },
+    "policy": {
+        "policy": {
+            "class": "SLACPolicy",
+            "kwargs": {
+                "env": "$expl_env",
+                "processor": "$proc",
+                "hidden_layers": [256,256],
+                "activation": "relu",
+                "init_func_name": "xavier_uniform_",
+                "std_scale": 2
+            }
+        }
+    },
+    "value": {
+        "qf": {
+            "class": "LatentEnsembleQValue",
+            "kwargs": {
+                "env": "$expl_env",
+                "processor": "$traj_proc",
+                "hidden_layers": [256,256],
+                "activation": "relu",
+                "init_func_name": "xavier_uniform_"
+            } 
+        },
+        "qf_target": {
+            "class": "LatentEnsembleQValue",
+            "kwargs": {
+                "env": "$expl_env",
+                "processor": "$traj_proc",
+                "hidden_layers": [256,256],
+                "activation": "relu",
+                "init_func_name": "xavier_uniform_"
+            } 
+        }
+    },
+    "agent":{
+        "agent":{
+            "class": "SLACAgent",
+            "kwargs": {
+                "env": "$expl_env",
+                "policy": "$policy",
+                "qf": "$qf",
+                "qf_target": "$qf_target",
+                "obs_processor": "$proc",
+                "traj_processor": "$traj_proc",
+                "num_seed_steps": -1,
+                "pretrain_steps": 50000,
+                "pretrain_batch_size": 32,
+                "kl_coef": 1,
+                "reward_coef": 1,
+                "train_latent_ratio": 0.11111112, 
+                "independent_training": true,
+                "policy_lr": 3e-4,
+                "qf_lr": 3e-4,
+                "latent_lr": 1e-4,
+                "soft_target_tau": 5e-3,
+                "use_automatic_entropy_tuning": true,
+                "init_log_alpha": 0, 
+                "policy_update_freq": 1,
+                "target_update_freq": 1
+            }
+        }
+    },
+    "pool": {
+        "pool": {
+            "class": "TrajectoryPool",
+            "kwargs": {
+                "env": "$expl_env",
+                "max_size": 5e5 
+            }
+        }
+    },
+    "collector": {
+        "expl_collector": {
+            "class": "simple_collector",
+            "kwargs": {
+                "env": "$expl_env",
+                "agent": "$agent",
+                "pool": "$pool",
+                "action_repeat": "$action_repeat"
+            }
+        },
+        "eval_collector": {
+            "class": "simple_collector",
+            "kwargs": {
+                "env": "$eval_env",
+                "agent": "$agent",
+                "action_repeat": "$action_repeat"
+            }
+        }
+    }
+}
