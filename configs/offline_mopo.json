@@ -1,0 +1,178 @@
+{
+    "constant": {
+        "env_name": "cheetah",
+        "dataset_name": "halfcheetah-medium-expert-v2",
+        "target_entropy": -3,
+        "depth_schedule": 5,
+        "penalty_coef": 1
+    },
+    "experiment": {
+        "tag": "my_mopo",
+        "use_gpu": true,
+        "seed": null,
+        "base_log_dir": "~/data/mirl/offline_mopo",
+        "log_level": "WARNING",
+        "repeat": 5
+    },
+    "algorithm": {
+        "sac": {
+            "class": "OfflineDynaAlgorithm",
+            "kwargs": {
+                "num_epochs": 1000,
+                "batch_size": 256,
+                "num_eval_steps": 10000,
+                "num_train_loops_per_epoch": 1000,
+                "num_trains_per_train_loop": 1,
+                "record_video_freq": -1,
+                "silent": false,
+                "real_data_ratio": 0.05,
+                "imagine_freq": 250
+            }
+        }
+    },
+    "environment": {
+        "eval_env": {
+            "class": "ContinuousVectorEnv",
+            "kwargs": {
+                "env_name": "$env_name",
+                "n_env": 10,
+                "reward_scale": 1
+            }
+        }
+    },
+    "policy": {
+        "policy": {
+            "class": "gaussian_policy",
+            "kwargs": {
+                "env": "$eval_env",
+                "hidden_layers": [
+                    256,
+                    256
+                ],
+                "activation": "relu"
+            }
+        }
+    },
+    "value": {
+        "qf": {
+            "class": "ensemble_q_value",
+            "kwargs": {
+                "env": "$eval_env",
+                "hidden_layers": [
+                    256,
+                    256
+                ],
+                "activation": "relu"
+            }
+        },
+        "qf_target": {
+            "class": "ensemble_q_value",
+            "kwargs": {
+                "env": "$eval_env",
+                "hidden_layers": [
+                    256,
+                    256
+                ],
+                "activation": "relu"
+            }
+        }
+    },
+    "component": {
+        "model": {
+            "class": "PEModel",
+            "kwargs": {
+                "env": "$eval_env",
+                "known": [
+                    "done"
+                ],
+                "ensemble_size": 10,
+                "elite_number": 7,
+                "hidden_layers": [
+                    200,
+                    200,
+                    200,
+                    200
+                ],
+                "activation": "swish",
+                "connection": "simple",
+                "reward_coef": 1,
+                "bound_reg_coef": 2e-2,
+                "weight_decay": [
+                    2.5e-5,
+                    5e-5,
+                    7.5e-5,
+                    7.5e-5,
+                    1e-4
+                ]
+            }
+        },
+        "model_trainer": {
+            "class": "PEModelTrainer",
+            "kwargs": {
+                "env": "$eval_env",
+                "model": "$model",
+                "lr": 1e-3,
+                "init_model_train_step": 500000,
+                "report_freq": 200,
+                "max_not_improve": -1,
+                "ignore_terminal_state": true
+            }
+        },
+        "model_collector": {
+            "class": "MOPOCollector",
+            "kwargs": {
+                "model": "$model",
+                "policy": "$policy",
+                "pool": "$pool", 
+                "imagined_data_pool": "$imagined_data_pool",
+                "penalty_coef": "$penalty_coef",
+                "depth_schedule": "$depth_schedule",
+                "penalty_type": "total_var"
+            }
+        }
+    },
+    "agent": {
+        "agent": {
+            "class": "SAC_agent",
+            "kwargs": {
+                "env": "$eval_env",
+                "policy": "$policy",
+                "qf": "$qf",
+                "qf_target": "$qf_target",
+                "policy_lr": 3e-4,
+                "qf_lr": 3e-4,
+                "soft_target_tau": 5e-3,
+                "use_automatic_entropy_tuning": true,
+                "alpha_if_not_automatic": 0,
+                "target_entropy": "$target_entropy"
+            }
+        }
+    },
+    "pool": {
+        "pool": {
+            "class": "OfflinePool",
+            "kwargs": {
+                "dataset_name": "$dataset_name",
+                "pool_class": "ExtraFieldPool",
+                "compute_mean_std": true
+            }
+        },
+        "imagined_data_pool": {
+            "class": "simple_pool",
+            "kwargs": {
+                "env": "$eval_env",
+                "max_size": 1e6
+            }
+        }
+    },
+    "collector": {
+        "eval_collector": {
+            "class": "simple_collector",
+            "kwargs": {
+                "env": "$eval_env",
+                "agent": "$agent",
+                "memory_size": 10
+            }
+        }
+    }
+}

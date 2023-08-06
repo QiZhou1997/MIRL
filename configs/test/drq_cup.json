@@ -1,0 +1,21 @@
+{
+    "base_config_file": "configs/drq/drq.json",
+    "constant":{
+        "action_repeat": 4,
+        "num_train_loops_per_epoch": 250,
+        "domain": "ball_in_cup",
+        "task": "catch"
+    },
+    "experiment":{
+        "tag": "test_drq",
+        "use_gpu": true,
+        "seed": null,
+        "base_log_dir": "~/data/mirl/test",
+        "log_level": "INFO",
+        "repeat": 0
+    },
+    "cmd_config":{
+        "drq.num_epochs": 120,
+        "drq.batch_size": 256
+    }
+}

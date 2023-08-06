@@ -1,0 +1,14 @@
+{
+    "base_config_file": "configs/ddpg.json",
+    "experiment":{
+        "tag": "test_ddpg",
+        "use_gpu": true,
+        "seed": null,
+        "base_log_dir": "~/data/mirl/test",
+        "log_level": "INFO",
+        "repeat": 0
+    },
+    "cmd_config":{
+        "slac.num_epochs": 1000
+    }
+}

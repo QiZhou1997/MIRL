@@ -1,0 +1,2 @@
+from mirl.collectors.base_collector import Collector
+import mirl.collectors.step_collector
